@@ -28,6 +28,7 @@ mode_modifiers = [
     '<ctrl>+<shift>'
 ]
 
+
 def _build_hotkeys():
 
     #hks = {}
@@ -44,6 +45,7 @@ def _build_hotkeys():
             for mode_idx, mode_mod in enumerate(mode_modifiers) 
             for key, key_value in keys.items() 
         }
+
 
 def _handle_key(mode: int, key: Keys):
     def _handle_key_wrap():
@@ -69,21 +71,3 @@ def stop():
     print ("Keyhooks Ending...")
     global _listener
     _listener.stop()
-
-
-
-
-# q = queue.Queue()
-
-#         with GlobalHotKeys({
-#                 '<ctrl>+<shift>+a': lambda: q.put('a'),
-#                 '<ctrl>+<shift>+b': lambda: q.put('b'),
-#                 '<ctrl>+<shift>+c': lambda: q.put('c')}):
-#             notify('Press <ctrl>+<shift>+a')
-#             self.assertEqual('a', q.get())
-
-#             notify('Press <ctrl>+<shift>+b')
-#             self.assertEqual('b', q.get())
-
-#             notify('Press <ctrl>+<shift>+c')
-#             self.assertEqual('c', q.get())

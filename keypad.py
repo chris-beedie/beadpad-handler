@@ -1,6 +1,7 @@
 from enum import IntEnum, Enum, auto
 from pynput import keyboard
 from threading import Thread
+from typing import Union
 
 class Key(Enum):
     KEY1 = auto()
@@ -40,29 +41,48 @@ class Keypad:
 
         try:
             return { 
-                f"{self._mode_modifiers[mode.value]}+{key_value}": self._handle_key(mode, key) 
+                f"{self._mode_modifiers[mode.value]}+{key_value}": self._dispatcher(mode, key) 
                 for mode in self._mode_enum 
                 for key, key_value in self._keys.items() 
             }
         except IndexError:
             raise KeypadError(f"Too many modes defined, max={len(self._mode_modifiers)}")
 
-
-    def _handle_key(self, mode: IntEnum, key: Key):
-        def _handle_key_wrap():
-            Thread(target=self._callback, args=(mode, key)).start()
-        return _handle_key_wrap  
-
-
-    def start(self, callback):
+    
+    def _handle_key(self, actions: dict):
+        def _handle_key_wrap(mode: self._mode_enum, key: Key):
         
-        self._callback = callback
+            print("auto defined")
+            action = (
+                actions
+                .get(mode,{})
+                .get(key,lambda: print(f"no action defined for '{key.name}' in mode '{mode.name}'"))
+            )
+            
+            action()
+
+        return _handle_key_wrap
+
+    def _dispatcher(self, mode: IntEnum, key: Key):
+        def _dispather_wrap():
+            Thread(target=self._callback, args=(mode, key)).start()
+        return _dispather_wrap  
+
+
+    def start(self, handler: Union[dict, callable]):
+        
+        if callable(handler):
+            self._callback = handler
+        else:
+            self._callback = self._handle_key(handler)
+ 
 
         print ("Keyhooks Starting...")
 
         with keyboard.GlobalHotKeys(self._build_hotkeys()) as h:
             self._listener = h
             h.join()
+
 
 
     def stop(self):

@@ -1,96 +1,74 @@
-from enum import IntEnum, Enum, auto
-from pynput import keyboard
-from threading import Thread
-from typing import Union
+#from pynput import keyboard
+import keyboard
+from enum import Flag, Enum,auto, IntFlag, IntEnum
+from collections import defaultdict
 
-class Key(Enum):
-    KEY1 = auto()
-    KEY2 = auto()
-    KEY3 = auto()
-    KEY4 = auto()
-    ROT_BUT = auto()
-    ROT_CW = auto()
-    ROT_CCW = auto()
-
-class KeypadError(Exception):
-    pass
+class Key(IntEnum):
+    KEY1 = 0
+    KEY2 = 1
+    KEY3 = 2
+    KEY4 = 3
+    ROT_BUT = 4
+    ROT_CW = 5
+    ROT_CCW = 6
 
 class Keypad():
 
-    #pass through an instance of the pynput controller 
-    sender = keyboard.Controller()
+    _SEG_MODE = "mode"
+    _SEG_KEY = "key"
 
-    _keys = {
-        Key.KEY1: '<F1>',
-        Key.KEY2: '<F2>',
-        Key.KEY3: '<F3>',
-        Key.KEY4: '<F4>',
-        Key.ROT_BUT: '<F5>',
-        Key.ROT_CCW: '<F6>',
-        Key.ROT_CW: '<F7>',
+    keymap = {
+        "terminators": {
+            "begin":"q",
+            "end":"w"
+        },
+        "segments":{
+            _SEG_MODE:["a","s","d","f"],
+            _SEG_KEY:["z","x","c"]
+        }
     }
-
-    _mode_modifiers = [
-        '<ctrl>', 
-        '<shift>',
-        '<ctrl>+<shift>'
-    ]
-
-
-
+      
     def __init__(self, mode_enum: IntEnum):
         self._mode_enum = mode_enum
+        self._segments = defaultdict(int)
+
+
+    def _add_hook(self, key, fn, *args, **kwargs):
+
+        def _add_hook_wrap(e):
+            if e.event_type == keyboard.KEY_DOWN:
+                return fn(*args, **kwargs)
         
+        keyboard.hook_key(key, _add_hook_wrap)
 
-    def _build_hotkeys(self):
 
-        try:
-            return { 
-                f"{self._mode_modifiers[mode.value]}+{key_value}": self._dispatcher(mode, key) 
-                for mode in self._mode_enum 
-                for key, key_value in self._keys.items() 
-            }
-        except IndexError:
-            raise KeypadError(f"Too many modes defined, max={len(self._mode_modifiers)}")
-
-    
-    def _handle_key(self, actions: dict):
-        def _handle_key_wrap(mode: self._mode_enum, key: Key):
+    def start(self):
         
-            action = (
-                actions
-                .get(mode,{})
-                .get(key,lambda: print(f"no action defined for '{key.name}' in mode '{mode.name}'"))
-            )
-            
-            action()
+        terminators = self.keymap["terminators"]
+        self._add_hook(terminators["begin"], self.sequence_begin)     
+        self._add_hook(terminators["end"], self.sequence_complete)    
 
-        return _handle_key_wrap
+        segments = self.keymap["segments"]
+        for segment_name, keys in segments.items():
+            for key_index, key in enumerate(keys):
+                self._add_hook(key, self.sequence_update, segment_name, key_index)    
 
-    def _dispatcher(self, mode: IntEnum, key: Key):
-        def _dispather_wrap():
-            Thread(target=self._callback, args=(mode, key)).start()
-        return _dispather_wrap  
+        print("Hook Started...")
+        keyboard.wait()
 
-
-    def start(self, handler: Union[dict, callable]):
-        
-        if callable(handler):
-            self._callback = handler
-        else:
-            self._callback = self._handle_key(handler)
- 
-
-        print ("Keyhooks Starting...")
-
-        with keyboard.GlobalHotKeys(self._build_hotkeys()) as h:
-            self._listener = h
-            h.join()
+    def sequence_begin(self):
+        print("CLEARING")
+        self._segments.clear()
 
 
+    def sequence_update(self, segment_name, bit_number):
+        self._segments[segment_name] += 2**bit_number
+        print("UPDATING:",segment_name, bit_number)
 
-    def stop(self):
-        print ("Keyhooks Ending...")
-        
-        if self._listener:
-            self._listener.stop()
+
+    def sequence_complete(self):
+        print("COMPLETING")
+        mode = self._mode_enum(self._segments[self._SEG_MODE])
+        key = Key(self._segments[self._SEG_KEY])
+
+        print(mode, key)

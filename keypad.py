@@ -15,7 +15,10 @@ class Key(Enum):
 class KeypadError(Exception):
     pass
 
-class Keypad:
+class Keypad():
+
+    #pass through an instance of the pynput controller 
+    sender = keyboard.Controller()
 
     _keys = {
         Key.KEY1: '<F1>',
@@ -32,6 +35,8 @@ class Keypad:
         '<shift>',
         '<ctrl>+<shift>'
     ]
+
+
 
     def __init__(self, mode_enum: IntEnum):
         self._mode_enum = mode_enum
@@ -52,7 +57,6 @@ class Keypad:
     def _handle_key(self, actions: dict):
         def _handle_key_wrap(mode: self._mode_enum, key: Key):
         
-            print("auto defined")
             action = (
                 actions
                 .get(mode,{})

@@ -1,6 +1,5 @@
-#from pynput import keyboard
 import keyboard
-from enum import Flag, Enum,auto, IntFlag, IntEnum
+from enum import IntEnum
 from collections import defaultdict
 
 class Key(IntEnum):
@@ -14,17 +13,14 @@ class Key(IntEnum):
 
 class Keypad():
 
-    _SEG_MODE = "mode"
-    _SEG_KEY = "key"
-
     keymap = {
         "terminators": {
             "begin":"q",
             "end":"w"
         },
         "segments":{
-            _SEG_MODE:["a","s","d","f"],
-            _SEG_KEY:["z","x","c"]
+            "mode":["a","s","d","f"],
+            "key":["z","x","c"]
         }
     }
       
@@ -56,19 +52,19 @@ class Keypad():
         print("Hook Started...")
         keyboard.wait()
 
-    def sequence_begin(self):
+    def _sequence_begin(self):
         print("CLEARING")
         self._segments.clear()
 
 
-    def sequence_update(self, segment_name, bit_number):
+    def _sequence_update(self, segment_name, bit_number):
         self._segments[segment_name] += 2**bit_number
         print("UPDATING:",segment_name, bit_number)
 
 
-    def sequence_complete(self):
+    def _sequence_complete(self):
         print("COMPLETING")
-        mode = self._mode_enum(self._segments[self._SEG_MODE])
-        key = Key(self._segments[self._SEG_KEY])
+        mode = self._mode_enum(self._segments["mode"])
+        key = Key(self._segments["key"])
 
         print(mode, key)

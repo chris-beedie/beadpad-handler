@@ -41,16 +41,17 @@ class Keypad():
     def start(self):
         
         terminators = self.keymap["terminators"]
-        self._add_hook(terminators["begin"], self.sequence_begin)     
-        self._add_hook(terminators["end"], self.sequence_complete)    
+        self._add_hook(terminators["begin"], self._sequence_begin)     
+        self._add_hook(terminators["end"], self._sequence_complete)    
 
         segments = self.keymap["segments"]
         for segment_name, keys in segments.items():
             for key_index, key in enumerate(keys):
-                self._add_hook(key, self.sequence_update, segment_name, key_index)    
+                self._add_hook(key, self._sequence_update, segment_name, key_index)    
 
         print("Hook Started...")
         keyboard.wait()
+
 
     def _sequence_begin(self):
         print("CLEARING")

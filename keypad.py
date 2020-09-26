@@ -6,6 +6,7 @@ from threading import Thread
 
 #TODO
 #add logger
+#wrap around modes if they are set but undefined
 
 
 class Key(IntEnum):
@@ -89,6 +90,7 @@ class Keypad():
 
         return _handle_key_wrap
 
-
+    def send(self, hotkey, do_press=True, do_release=True):
+        keyboard.send(hotkey, do_press, do_release)
 
     

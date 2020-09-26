@@ -20,12 +20,13 @@ class Key(IntEnum):
 class Keypad():
 
     keymap = {
-        "terminator": "q",
+        "terminator": "f24",
         "segments":{
-            "mode":["a","s","d"],
-            "key":["z","x","c"]
+            "mode":["f23","f22","f21"],
+            "key":["f20","f19","f18"]
         }
     }
+
       
     def __init__(self, mode_enum: IntEnum):
         self._mode_enum = mode_enum

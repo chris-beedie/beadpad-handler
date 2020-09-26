@@ -1,6 +1,12 @@
 import keyboard
 from enum import IntEnum
 from collections import defaultdict
+from typing import Union
+from threading import Thread
+
+#TODO
+#add logger
+
 
 class Key(IntEnum):
     KEY1 = 0
@@ -14,12 +20,9 @@ class Key(IntEnum):
 class Keypad():
 
     keymap = {
-        "terminators": {
-            "begin":"q",
-            "end":"w"
-        },
+        "terminator": "q",
         "segments":{
-            "mode":["a","s","d","f"],
+            "mode":["a","s","d"],
             "key":["z","x","c"]
         }
     }
@@ -38,34 +41,53 @@ class Keypad():
         keyboard.hook_key(key, _add_hook_wrap)
 
 
-    def start(self):
+    def start(self, handler: Union[dict, callable]):
         
-        terminators = self.keymap["terminators"]
-        self._add_hook(terminators["begin"], self._sequence_begin)     
-        self._add_hook(terminators["end"], self._sequence_complete)    
+        self._callback = handler if callable(handler) else self._handle_key(handler)
+
+        #add hooks
+        self._add_hook(self.keymap["terminator"], self._complete)        
 
         segments = self.keymap["segments"]
         for segment_name, keys in segments.items():
-            for key_index, key in enumerate(keys):
-                self._add_hook(key, self._sequence_update, segment_name, key_index)    
+            for index, key in enumerate(keys):
+                self._add_hook(key, self._set_segment_bit, segment_name, index)    
 
-        print("Hook Started...")
+        print("Hook Started...") #TODO - LOG
         keyboard.wait()
 
 
-    def _sequence_begin(self):
-        print("CLEARING")
-        self._segments.clear()
 
-
-    def _sequence_update(self, segment_name, bit_number):
+    def _set_segment_bit(self, segment_name, bit_number):
         self._segments[segment_name] += 2**bit_number
-        print("UPDATING:",segment_name, bit_number)
 
 
-    def _sequence_complete(self):
-        print("COMPLETING")
-        mode = self._mode_enum(self._segments["mode"])
-        key = Key(self._segments["key"])
+    def _complete(self):
+        try:
+            mode = self._mode_enum(self._segments["mode"])
+            key = Key(self._segments["key"])
+        except ValueError as e:
+            print(e) #TODO - LOG
+            return
+        finally:
+            self._segments.clear()
 
-        print(mode, key)
+        Thread(target=self._callback, args=(mode, key)).start()
+
+
+    def _handle_key(self, actions: dict):
+        def _handle_key_wrap(mode: self._mode_enum, key: Key):
+        
+            action = (
+                actions
+                .get(mode,{})
+                .get(key,lambda: print(f"no action defined for '{key.name}' in mode '{mode.name}'")) #TODO - LOG
+            )
+            
+            action()
+
+        return _handle_key_wrap
+
+
+
+    
